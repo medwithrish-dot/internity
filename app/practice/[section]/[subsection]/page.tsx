@@ -31,23 +31,48 @@ export default async function PracticeSubsectionPage({
     data: { user },
   } = await supabase.auth.getUser()
 
+  if (!user) {
+    redirect("/login")
+  }
+
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("plan")
+    .eq("id", user.id)
+    .single()
+
+  const currentPlan = profile?.plan ?? "free"
+
+  if (currentPlan !== "premium") {
+    const today = new Date()
+    today.setHours(0, 0, 0, 0)
+
+    const { count } = await supabase
+      .from("question_attempts")
+      .select("*", { count: "exact", head: true })
+      .eq("user_id", user.id)
+      .gte("created_at", today.toISOString())
+
+    if ((count ?? 0) >= 7) {
+      redirect("/pricing")
+    }
+  }
+
   let filteredQuestions = currentSubsection.questions
 
-  if (user) {
-    const { data: attempts } = await supabase
-      .from("question_attempts")
-      .select("question_id")
-      .eq("user_id", user.id)
+  const { data: attempts } = await supabase
+    .from("question_attempts")
+    .select("question_id")
+    .eq("user_id", user.id)
 
-    const attemptedIds = new Set(attempts?.map((a) => a.question_id))
+  const attemptedIds = new Set(attempts?.map((a) => a.question_id))
 
-    const unseenQuestions = currentSubsection.questions.filter(
-      (q) => !attemptedIds.has(q.id)
-    )
+  const unseenQuestions = currentSubsection.questions.filter(
+    (q) => !attemptedIds.has(q.id)
+  )
 
-    filteredQuestions =
-      unseenQuestions.length > 0 ? unseenQuestions : currentSubsection.questions
-  }
+  filteredQuestions =
+    unseenQuestions.length > 0 ? unseenQuestions : currentSubsection.questions
 
   return (
     <main className="container-page">
