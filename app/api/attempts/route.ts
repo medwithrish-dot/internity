@@ -58,8 +58,13 @@ export async function POST(request: Request) {
   })
 
   if (error) {
-  console.error("SUPABASE INSERT ERROR:", error)
-  return NextResponse.json({ error: error.message }, { status: 500 })
+  return NextResponse.json(
+    {
+      error: error.message,
+      details: error,
+    },
+    { status: 500 }
+  )
 }
 
   return NextResponse.json({ success: true })
