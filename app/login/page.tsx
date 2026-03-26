@@ -3,16 +3,19 @@
 import Link from "next/link"
 import { useState } from "react"
 import { createClient } from "@/lib/supabase/client"
-import { useRouter } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
 
 export default function LoginPage() {
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [message, setMessage] = useState("")
   const [loading, setLoading] = useState(false)
-  const router = useRouter()
 
-  const handleLogin = async (e: React.FormEvent) => {
+  const router = useRouter()
+  const searchParams = useSearchParams()
+  const next = searchParams.get("next") || "/dashboard"
+
+  const handleLogin = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     setMessage("")
     setLoading(true)
@@ -30,7 +33,7 @@ export default function LoginPage() {
       return
     }
 
-    router.push("/dashboard")
+    router.replace(next)
     router.refresh()
   }
 
@@ -53,6 +56,7 @@ export default function LoginPage() {
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           disabled={loading}
+          required
         />
 
         <input
@@ -62,6 +66,7 @@ export default function LoginPage() {
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           disabled={loading}
+          required
         />
 
         <div className="flex justify-between items-center gap-3">

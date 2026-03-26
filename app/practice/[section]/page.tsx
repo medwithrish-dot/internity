@@ -42,6 +42,7 @@ export default async function PracticeSectionPage({
           <div className="mt-6">
             <Link
               href={`/practice/${currentSection.slug}/all`}
+              prefetch={false}
               className="inline-flex items-center rounded-xl bg-cyan-400 text-black px-5 py-3 font-extrabold hover:opacity-90 transition"
             >
               Practice All
@@ -62,6 +63,7 @@ export default async function PracticeSectionPage({
                 <Link
                   key={subsection.slug}
                   href="/pricing"
+                  prefetch={false}
                   className="group rounded-2xl border border-white/10 bg-[#0d1733] p-5 hover:border-cyan-400/30 transition"
                 >
                   <div className="flex items-start justify-between gap-3 mb-3">
@@ -89,6 +91,7 @@ export default async function PracticeSectionPage({
               <Link
                 key={subsection.slug}
                 href={`/practice/${currentSection.slug}/${subsection.slug}`}
+                prefetch={false}
                 className="group rounded-2xl border border-white/10 bg-[#0d1733] p-5 hover:border-cyan-400/30 transition"
               >
                 <h3 className="text-xl font-extrabold mb-3 group-hover:text-cyan-300 transition">

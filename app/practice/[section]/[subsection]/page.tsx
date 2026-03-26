@@ -32,8 +32,8 @@ export default async function PracticeSubsectionPage({
   } = await supabase.auth.getUser()
 
   if (!user) {
-    redirect("/login")
-  }
+  redirect(`/login?next=/practice/${section}/${subsection}`)
+}
 
   const { data: profile } = await supabase
     .from("profiles")

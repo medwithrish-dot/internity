@@ -59,15 +59,16 @@ export default function PracticeSectionCard({
 
   return (
     <Link
-      href={`/practice/${section.slug}`}
-      className={`group rounded-[22px] border p-4 md:p-5 transition block hover:-translate-y-1 ${accent.hover}`}
-      style={{
-        background:
-          "linear-gradient(180deg, rgba(19,32,74,1) 0%, rgba(13,23,51,1) 100%)",
-        borderColor: "rgba(255,255,255,0.08)",
-        boxShadow: "0 0 0 1px rgba(255,255,255,0.02) inset",
-      }}
-    >
+  href={`/practice/${section.slug}`}
+  prefetch={false}
+  className={`group rounded-[22px] border p-4 md:p-5 transition block hover:-translate-y-1 ${accent.hover}`}
+  style={{
+    background:
+      "linear-gradient(180deg, rgba(19,32,74,1) 0%, rgba(13,23,51,1) 100%)",
+    borderColor: "rgba(255,255,255,0.08)",
+    boxShadow: "0 0 0 1px rgba(255,255,255,0.02) inset",
+  }}
+>
       <div className={`h-[3px] w-12 rounded-full mb-4 ${accent.bar}`} />
 
       <div className="flex items-center justify-between gap-3 mb-3">

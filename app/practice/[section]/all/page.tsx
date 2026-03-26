@@ -27,7 +27,7 @@ export default async function PracticeAllSectionPage({
   } = await supabase.auth.getUser()
 
   if (!user) {
-    redirect("/login")
+    redirect(`/login?next=/practice/${section}/all`)
   }
 
   const { data: profile } = await supabase

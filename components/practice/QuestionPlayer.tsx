@@ -21,35 +21,30 @@ export default function QuestionPlayer({
   const defaultCount =
     availableCounts.length > 0 ? availableCounts[0] : questions.length
 
+  const DAILY_LIMIT = 7
+
   const [hasStarted, setHasStarted] = useState(false)
   const [timedMode, setTimedMode] = useState(false)
   const [selectedCount, setSelectedCount] = useState(defaultCount)
-
- const [activeQuestions, setActiveQuestions] = useState<Question[]>([])
-const [dailyCount, setDailyCount] = useState(0)
-const [userPlan, setUserPlan] = useState<"free" | "premium">("free")
-
-
-useEffect(() => {
-  if (!hasStarted) return
-  setActiveQuestions(shuffleQuestions(questions).slice(0, selectedCount))
-}, [hasStarted])
-
-  const [timeRemaining, setTimeRemaining] = useState(activeQuestions.length * 45)
-
+  const [activeQuestions, setActiveQuestions] = useState<Question[]>([])
+  const [dailyCount, setDailyCount] = useState(0)
+  const [userPlan, setUserPlan] = useState<"free" | "premium">("free")
+  const [timeRemaining, setTimeRemaining] = useState(0)
   const [currentIndex, setCurrentIndex] = useState(0)
   const [selectedOption, setSelectedOption] = useState<number | null>(null)
   const [submitted, setSubmitted] = useState(false)
-
   const [answeredIndexes, setAnsweredIndexes] = useState<number[]>([])
   const [flaggedIndexes, setFlaggedIndexes] = useState<number[]>([])
   const [reviewMode, setReviewMode] = useState(false)
   const [userAnswers, setUserAnswers] = useState<Record<number, number | null>>({})
 
   const currentQuestion = activeQuestions[currentIndex]
-const DAILY_LIMIT = 7
-const isDailyLocked = userPlan === "free" && dailyCount >= DAILY_LIMIT
+  const isDailyLocked = userPlan === "free" && dailyCount >= DAILY_LIMIT
 
+  useEffect(() => {
+    if (!hasStarted) return
+    setActiveQuestions(shuffleQuestions(questions).slice(0, selectedCount))
+  }, [hasStarted, questions, selectedCount])
 
   useEffect(() => {
     setTimeRemaining(activeQuestions.length * 45)
@@ -57,6 +52,7 @@ const isDailyLocked = userPlan === "free" && dailyCount >= DAILY_LIMIT
 
   useEffect(() => {
     if (!hasStarted || !timedMode || reviewMode) return
+
     if (timeRemaining <= 0) {
       setReviewMode(true)
       setSubmitted(true)
@@ -70,33 +66,33 @@ const isDailyLocked = userPlan === "free" && dailyCount >= DAILY_LIMIT
     return () => clearTimeout(timer)
   }, [hasStarted, timedMode, reviewMode, timeRemaining])
 
-useEffect(() => {
-  const fetchDailyAttempts = async () => {
-    try {
-      const res = await fetch("/api/attempts/today")
-      const data = await res.json()
-      setDailyCount(data.count ?? 0)
-    } catch (err) {
-      console.error("Failed to fetch daily attempts")
+  useEffect(() => {
+    const fetchDailyAttempts = async () => {
+      try {
+        const res = await fetch("/api/attempts/today")
+        const data = await res.json()
+        setDailyCount(data.count ?? 0)
+      } catch {
+        console.error("Failed to fetch daily attempts")
+      }
     }
-  }
 
-  fetchDailyAttempts()
-}, [])
+    fetchDailyAttempts()
+  }, [])
 
-useEffect(() => {
-  const fetchPlan = async () => {
-    try {
-      const res = await fetch("/api/user/plan")
-      const data = await res.json()
-      setUserPlan(data.plan ?? "free")
-    } catch {
-      setUserPlan("free")
+  useEffect(() => {
+    const fetchPlan = async () => {
+      try {
+        const res = await fetch("/api/user/plan")
+        const data = await res.json()
+        setUserPlan(data.plan ?? "free")
+      } catch {
+        setUserPlan("free")
+      }
     }
-  }
 
-  fetchPlan()
-}, [])
+    fetchPlan()
+  }, [])
 
   const completedCount = useMemo(() => {
     return Object.keys(userAnswers).filter(
@@ -209,12 +205,14 @@ useEffect(() => {
               <p className="text-white/50 text-xs mb-1">Questions</p>
               <p className="font-bold text-lg">{selectedCount}</p>
             </div>
+
             <div className="rounded-xl border border-white/10 bg-[#111d3d] p-4">
               <p className="text-white/50 text-xs mb-1">Mode</p>
               <p className="font-bold text-lg">
                 {timedMode ? "Timed" : "Untimed"}
               </p>
             </div>
+
             <div className="rounded-xl border border-white/10 bg-[#111d3d] p-4">
               <p className="text-white/50 text-xs mb-1">Time</p>
               <p className="font-bold text-lg">
@@ -225,9 +223,10 @@ useEffect(() => {
 
           <button
             onClick={() => setHasStarted(true)}
-            className="rounded-xl bg-cyan-400 text-black px-6 py-3 font-extrabold"
+            disabled={isDailyLocked}
+            className="rounded-xl bg-cyan-400 text-black px-6 py-3 font-extrabold disabled:opacity-50"
           >
-            Start Set
+            {isDailyLocked ? "Daily limit reached" : "Start Set"}
           </button>
         </div>
       </div>
@@ -241,42 +240,60 @@ useEffect(() => {
   const isLastQuestion = currentIndex === activeQuestions.length - 1
 
   const handleSubmit = async () => {
-    if (selectedOption === null) return
-
-    setSubmitted(true)
-
-    setAnsweredIndexes((prev) =>
-      prev.includes(currentIndex) ? prev : [...prev, currentIndex]
-    )
-
-    setUserAnswers((prev) => ({
-      ...prev,
-      [currentIndex]: selectedOption,
-    }))
+    if (selectedOption === null || isDailyLocked) return
 
     try {
-  const res = await fetch("/api/attempts", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      question_id: currentQuestion.id,
-      section_slug: sectionSlug,
-      subsection_slug: subsectionSlug,
-      correct: selectedOption === currentQuestion.correctAnswerIndex,
-      selected_answer: selectedOption,
-      correct_answer: currentQuestion.correctAnswerIndex,
-      timed_mode: timedMode ?? false,
-    }),
-  })
+      const res = await fetch("/api/attempts", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          question_id: currentQuestion.id,
+          section_slug: sectionSlug,
+          subsection_slug: subsectionSlug,
+          correct: selectedOption === currentQuestion.correctAnswerIndex,
+          selected_answer: selectedOption,
+          correct_answer: currentQuestion.correctAnswerIndex,
+          timed_mode: timedMode ?? false,
+        }),
+      })
 
-  if (res.ok && userPlan === "free") {
-    setDailyCount((prev) => prev + 1)
-  }
-} catch (err) {
-  console.error("Failed to save attempt", err)
-}
+      if (res.status === 401) {
+        window.location.href = `/login?next=${encodeURIComponent(
+          `/practice/${sectionSlug}/${subsectionSlug}`
+        )}`
+        return
+      }
+
+      if (res.status === 403) {
+        setDailyCount(DAILY_LIMIT)
+        return
+      }
+
+      if (!res.ok) {
+        const data = await res.json().catch(() => null)
+        console.error("Failed to save attempt", data)
+        return
+      }
+
+      setSubmitted(true)
+
+      setAnsweredIndexes((prev) =>
+        prev.includes(currentIndex) ? prev : [...prev, currentIndex]
+      )
+
+      setUserAnswers((prev) => ({
+        ...prev,
+        [currentIndex]: selectedOption,
+      }))
+
+      if (userPlan === "free") {
+        setDailyCount((prev) => prev + 1)
+      }
+    } catch (err) {
+      console.error("Failed to save attempt", err)
+    }
   }
 
   return (
@@ -297,12 +314,14 @@ useEffect(() => {
               <p className="text-white/50 text-[11px]">Completed</p>
               <p className="font-bold text-sm">{completedCount}</p>
             </div>
+
             <div className="rounded-xl border border-white/10 bg-[#111d3d] px-3 py-2">
               <p className="text-white/50 text-[11px]">Progress</p>
               <p className="font-bold text-sm">
                 {currentIndex + 1} / {activeQuestions.length}
               </p>
             </div>
+
             {timedMode && (
               <div className="rounded-xl border border-cyan-400/20 bg-cyan-400/10 px-3 py-2">
                 <p className="text-cyan-300 text-[11px]">Time Left</p>
@@ -311,6 +330,7 @@ useEffect(() => {
                 </p>
               </div>
             )}
+
             {reviewMode && (
               <div className="rounded-xl border border-cyan-400/20 bg-cyan-400/10 px-3 py-2">
                 <p className="text-cyan-300 text-[11px]">Score</p>
@@ -350,25 +370,26 @@ useEffect(() => {
             <p className="text-white/50 text-sm">
               Question {currentIndex + 1}
             </p>
-           {isDailyLocked ? (
-  <div className="rounded-2xl border border-yellow-400/30 bg-yellow-400/10 p-6 text-center">
-    <p className="text-lg font-extrabold mb-2">Daily limit reached</p>
-    <p className="text-white/70 mb-4">
-      You’ve completed your 7 free questions today. Upgrade to continue.
-    </p>
 
-    <a
-      href="/pricing"
-      className="inline-block rounded-xl bg-cyan-400 text-black px-5 py-3 font-extrabold hover:opacity-90 transition"
-    >
-      Upgrade to Premium
-    </a>
-  </div>
-) : (
-  <h2 className="text-xl md:text-2xl font-extrabold mt-1">
-    {currentQuestion.prompt ?? "Look at the image and choose the correct answer."}
-  </h2>
-)}
+            {isDailyLocked ? (
+              <div className="rounded-2xl border border-yellow-400/30 bg-yellow-400/10 p-6 text-center">
+                <p className="text-lg font-extrabold mb-2">Daily limit reached</p>
+                <p className="text-white/70 mb-4">
+                  You’ve completed your 7 free questions today. Upgrade to continue.
+                </p>
+
+                <a
+                  href="/pricing"
+                  className="inline-block rounded-xl bg-cyan-400 text-black px-5 py-3 font-extrabold hover:opacity-90 transition"
+                >
+                  Upgrade to Premium
+                </a>
+              </div>
+            ) : (
+              <h2 className="text-xl md:text-2xl font-extrabold mt-1">
+                {currentQuestion.prompt ?? "Look at the image and choose the correct answer."}
+              </h2>
+            )}
           </div>
 
           <button
@@ -476,12 +497,11 @@ useEffect(() => {
 
         <div className="flex flex-wrap gap-3 mt-6">
           {!submitted && !reviewMode ? (
-           
-           <button
-  onClick={handleSubmit}
-  disabled={selectedOption === null || isDailyLocked}
-  className="rounded-xl bg-cyan-400 text-black px-5 py-3 font-extrabold disabled:opacity-50"
->
+            <button
+              onClick={handleSubmit}
+              disabled={selectedOption === null || isDailyLocked}
+              className="rounded-xl bg-cyan-400 text-black px-5 py-3 font-extrabold disabled:opacity-50"
+            >
               Submit answer
             </button>
           ) : (
