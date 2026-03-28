@@ -28,7 +28,7 @@ export async function POST(request: Request) {
       .from("question_attempts")
       .select("*", { count: "exact", head: true })
       .eq("user_id", user.id)
-      .gte("created_at", today.toISOString())
+      .gte("completed_at", today.toISOString())
 
     if (countError) {
       return NextResponse.json({ error: countError.message }, { status: 500 })

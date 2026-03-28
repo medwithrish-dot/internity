@@ -19,7 +19,7 @@ export async function GET() {
     .from("question_attempts")
     .select("id")
     .eq("user_id", user.id)
-    .gte("created_at", today.toISOString())
+    .gte("completed_at", today.toISOString())
 
   return NextResponse.json({ count: data?.length ?? 0 })
 }
