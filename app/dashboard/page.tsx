@@ -115,9 +115,11 @@ export default async function DashboardPage() {
               </div>
 
               <div>
-                <p className="text-white/50 text-sm">Plan</p>
-                <p className="font-bold">Free</p>
-              </div>
+  <p className="text-white/50 text-sm">Plan</p>
+  <p className="font-bold">
+    {currentPlan === "premium" ? "Premium" : "Free"}
+  </p>
+</div>
 
               <form action="/auth/signout" method="post">
   <button
@@ -151,12 +153,18 @@ export default async function DashboardPage() {
                 </p>
               </div>
 
-              <a
-  href="/pricing"
-  className="block w-full rounded-xl bg-cyan-400 text-black px-5 py-3 font-extrabold cursor-pointer hover:opacity-90 transition text-center"
->
-  Upgrade to Premium
-</a>
+              {currentPlan !== "premium" ? (
+  <a
+    href="/pricing"
+    className="block w-full rounded-xl bg-cyan-400 text-black px-5 py-3 font-extrabold cursor-pointer hover:opacity-90 transition text-center"
+  >
+    Upgrade to Premium
+  </a>
+) : (
+  <div className="block w-full rounded-xl bg-green-500 text-white px-5 py-3 font-extrabold text-center">
+    You are on Premium ✅
+  </div>
+)}
             </div>
           </div>
 
