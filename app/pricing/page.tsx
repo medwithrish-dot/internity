@@ -1,3 +1,5 @@
+import UpgradeButton from "@/components/UpgradeButton"
+
 import Link from "next/link"
 
 export default function PricingPage() {
@@ -93,17 +95,12 @@ export default function PricingPage() {
           </div>
 
           <div className="mt-6 space-y-3">
-            <button
-              type="button"
-              className="block w-full rounded-xl bg-cyan-400 text-black px-5 py-3 text-center font-extrabold cursor-pointer hover:opacity-90 transition"
-            >
-              Upgrade coming soon
-            </button>
+  <UpgradeButton />
 
-            <p className="text-white/50 text-sm text-center">
-              Stripe checkout will connect here later.
-            </p>
-          </div>
+  <p className="text-white/50 text-sm text-center">
+    Secure checkout powered by Stripe.
+  </p>
+</div>
         </div>
       </section>
 
