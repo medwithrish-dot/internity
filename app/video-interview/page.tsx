@@ -3,7 +3,7 @@ export default function VideoInterviewPage() {
     <main className="container-page">
       <section className="text-center py-14">
         <div className="badge-teal inline-flex mb-6">Video Interview Practice</div>
-        <h1 className="text-6xl md:text-8xl font-extrabold leading-tight max-w-6xl mx-auto">
+        <h1 className="text-3xl md:text-5xl font-extrabold leading-snug max-w-3xl mx-auto">
           Master Your Video Interview
           <br />
           Performance
