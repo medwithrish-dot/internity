@@ -1,9 +1,8 @@
 import { NextResponse } from "next/server"
-import { createClient } from "@/lib/supabase/server"
+import { supabaseAdmin } from "@/lib/supabase/admin"
 
 export async function POST(request: Request) {
   try {
-    const supabase = await createClient()
     const formData = await request.formData()
 
     const file = formData.get("file") as File | null
@@ -22,7 +21,7 @@ export async function POST(request: Request) {
     const safeFileName = file.name.replace(/\s+/g, "-")
     const filePath = `${Date.now()}-${safeFileName}`
 
-    const { error: uploadError } = await supabase.storage
+    const { error: uploadError } = await supabaseAdmin.storage
       .from("cv-uploads")
       .upload(filePath, buffer, {
         contentType: file.type,
