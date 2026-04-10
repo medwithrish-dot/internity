@@ -1,9 +1,11 @@
 "use client"
 
 import { useState } from "react"
+import { useRouter } from "next/navigation"
 
 export default function UpgradeButton() {
   const [loading, setLoading] = useState(false)
+  const router = useRouter()
 
   const handleUpgrade = async () => {
     try {
@@ -14,6 +16,12 @@ export default function UpgradeButton() {
       })
 
       const data = await res.json()
+
+      if (res.status === 401) {
+        alert("Please log in or create an account first.")
+        router.push("/login")
+        return
+      }
 
       if (!res.ok) {
         throw new Error(data.error || "Something went wrong")

@@ -19,7 +19,9 @@ export async function POST(request: Request) {
     const buffer = Buffer.from(bytes)
 
     const safeFileName = file.name.replace(/\s+/g, "-")
-    const filePath = `${Date.now()}-${safeFileName}`
+    const filePath = `${Date.now()}-${Math.random()
+  .toString(36)
+  .substring(2)}-${safeFileName}`
 
     const { error: uploadError } = await supabaseAdmin.storage
       .from("cv-uploads")
