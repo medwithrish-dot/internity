@@ -44,16 +44,9 @@ export default function StageAccordion({
     confirmEmail.length > 0 &&
     email.trim().toLowerCase() === confirmEmail.trim().toLowerCase()
 
-  // ✅ FILE UPLOAD (with 10MB limit)
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
-
     if (file) {
-      if (file.size > 10 * 1024 * 1024) {
-        alert("File too large. Max size is 10MB.")
-        return
-      }
-
       setFileName(file.name)
       setFileObject(file)
     }
@@ -62,27 +55,20 @@ export default function StageAccordion({
   const handleDrop = (e: React.DragEvent<HTMLLabelElement>) => {
     e.preventDefault()
     const file = e.dataTransfer.files?.[0]
-
     if (file) {
-      if (file.size > 10 * 1024 * 1024) {
-        alert("File too large. Max size is 10MB.")
-        return
-      }
-
       setFileName(file.name)
       setFileObject(file)
     }
   }
 
-  // ✅ STRIPE FLOW
   const handleCvCheckout = async () => {
     if (!emailsMatch) {
-      alert("Emails do not match.")
+      alert("Please make sure both email addresses match.")
       return
     }
 
     if (!fileObject) {
-      alert("Upload your CV first.")
+      alert("Please upload your CV first.")
       return
     }
 
@@ -101,7 +87,7 @@ export default function StageAccordion({
       const uploadData = await uploadRes.json()
 
       if (!uploadRes.ok) {
-        throw new Error(uploadData.error)
+        throw new Error(uploadData.error || "CV upload failed")
       }
 
       const checkoutRes = await fetch("/api/stripe/cv-checkout", {
@@ -119,12 +105,17 @@ export default function StageAccordion({
       const checkoutData = await checkoutRes.json()
 
       if (!checkoutRes.ok) {
-        throw new Error(checkoutData.error)
+        throw new Error(checkoutData.error || "Checkout failed")
       }
 
-      window.location.href = checkoutData.url
-    } catch (error: any) {
-      alert(error.message || "Something went wrong")
+      if (checkoutData.url) {
+        window.location.href = checkoutData.url
+        return
+      }
+
+      throw new Error("No checkout URL returned")
+    } catch (error) {
+      alert(error instanceof Error ? error.message : "Something went wrong")
       setCvLoading(false)
     }
   }
@@ -143,7 +134,7 @@ export default function StageAccordion({
       >
         <div className="grid grid-cols-[44px_1fr_110px_24px] items-center gap-4">
           <div
-            className={`w-11 h-11 rounded-xl flex items-center justify-center text-lg ${
+            className={`w-11 h-11 rounded-xl flex items-center justify-center text-lg transition-transform duration-200 group-hover:scale-105 ${
               premium ? "bg-cyan-400 text-black" : "bg-[#1b274b] text-white"
             }`}
           >
@@ -152,14 +143,20 @@ export default function StageAccordion({
 
           <div>
             <div className="text-sm text-white/60">{stage}</div>
-            <div className="text-lg md:text-xl font-semibold">
+            <div
+              className={`text-lg md:text-xl font-semibold transition-colors duration-200 ${
+                title === "CV & ATS Screening"
+                  ? "text-[#f6d67a] group-hover:text-[#ffe89a]"
+                  : "group-hover:text-cyan-300"
+              }`}
+            >
               {title}
             </div>
           </div>
 
           <div className="flex justify-center">
             {premium ? (
-              <div className="px-3 py-1 rounded-full text-xs bg-cyan-400 text-black font-semibold">
+              <div className="px-3 py-1 rounded-full text-xs bg-cyan-400 text-black font-semibold whitespace-nowrap">
                 Premium
               </div>
             ) : (
@@ -167,53 +164,174 @@ export default function StageAccordion({
             )}
           </div>
 
-          <div className="text-lg text-white/60 text-center">
-            {open ? "⌃" : "⌄"}
+          <div
+            className={`text-lg text-white/60 text-center transition-transform duration-300 ${
+              open ? "rotate-180" : ""
+            }`}
+          >
+            ⌄
           </div>
         </div>
       </button>
 
-      {open && (
-        <div className="mt-5 ml-[60px] text-white/75">
-          <p>{description}</p>
+      <div
+        className={`grid transition-all duration-300 ease-in-out ${
+          open ? "grid-rows-[1fr] opacity-100 mt-5" : "grid-rows-[0fr] opacity-0 mt-0"
+        }`}
+      >
+        <div className="overflow-hidden">
+          <div className="ml-[60px] text-white/75 leading-7 text-base max-w-4xl pb-1">
+            {description}
 
-          {showCvForm && (
-            <div className="mt-6 space-y-4">
+            <div className="flex flex-wrap gap-3 mt-6">
+              {guideHref && guideLabel && (
+                <Link
+                  href={guideHref}
+                  className="inline-flex items-center rounded-xl bg-[#182a57] border border-[#29447b] px-4 py-3 font-semibold text-white hover:border-cyan-400 transition"
+                >
+                  Click here to access {guideLabel}
+                </Link>
+              )}
 
-              <input
-                type="email"
-                placeholder="Email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="w-full p-3 rounded bg-[#1d1709]"
-              />
+              {practiceHref && practiceLabel && (
+                <Link
+                  href={practiceHref}
+                  className="inline-flex items-center rounded-xl bg-cyan-400 text-black px-4 py-3 font-semibold hover:opacity-90 transition"
+                >
+                  {practiceLabel}
+                </Link>
+              )}
 
-              <input
-                type="email"
-                placeholder="Confirm Email"
-                value={confirmEmail}
-                onChange={(e) => setConfirmEmail(e.target.value)}
-                className="w-full p-3 rounded bg-[#1d1709]"
-              />
-
-              <input
-                type="file"
-                onChange={handleFileChange}
-                className="w-full"
-              />
-
-              <button
-                onClick={handleCvCheckout}
-                disabled={cvLoading}
-                className="w-full bg-yellow-400 text-black p-4 rounded font-bold"
-              >
-                {cvLoading ? "Loading..." : "Continue to CV Review"}
-              </button>
-
+              {videoHref && videoLabel && (
+                <Link
+                  href={videoHref}
+                  className="inline-flex items-center rounded-xl bg-cyan-400 text-black px-4 py-3 font-semibold hover:opacity-90 transition"
+                >
+                  {videoLabel}
+                </Link>
+              )}
             </div>
-          )}
+
+            {showCvForm && (
+              <div className="mt-8 rounded-[24px] border border-[#5e4b16] bg-[linear-gradient(180deg,rgba(44,33,7,0.35)_0%,rgba(18,14,6,0.2)_100%)] p-6">
+                <div className="inline-flex rounded-full bg-[#3b2e0d] border border-[#70571a] px-4 py-2 text-sm font-semibold text-[#f6d67a] mb-5">
+                  CV & ATS Review
+                </div>
+
+                <h3 className="text-2xl md:text-3xl font-extrabold text-[#f6d67a] leading-tight">
+                  Submit your CV for expert review
+                </h3>
+
+                <p className="text-[#dcc37a] mt-4 leading-7">
+                  Upload your CV, pay securely with Stripe, and we’ll send your
+                  feedback to your chosen email address.
+                </p>
+
+                <div className="mt-6 space-y-5">
+                  <div>
+                    <label className="block text-sm text-[#f2dc95] mb-2">
+                      Email address for feedback
+                    </label>
+                    <input
+                      type="email"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      placeholder="Enter your email"
+                      className="w-full rounded-2xl border border-[#70571a] bg-[#1d1709] px-4 py-4 outline-none text-white placeholder:text-[#b89b56]"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm text-[#f2dc95] mb-2">
+                      Confirm email address
+                    </label>
+                    <input
+                      type="email"
+                      value={confirmEmail}
+                      onChange={(e) => setConfirmEmail(e.target.value)}
+                      placeholder="Re-enter your email"
+                      className="w-full rounded-2xl border border-[#70571a] bg-[#1d1709] px-4 py-4 outline-none text-white placeholder:text-[#b89b56]"
+                    />
+
+                    {confirmEmail.length > 0 && (
+                      <p
+                        className={`mt-2 text-sm ${
+                          emailsMatch ? "text-green-400" : "text-red-400"
+                        }`}
+                      >
+                        {emailsMatch ? "Emails match" : "Emails do not match"}
+                      </p>
+                    )}
+                  </div>
+
+                  <div>
+                    <p className="block text-sm text-[#f2dc95] mb-2">
+                      Upload CV
+                    </p>
+
+                    <label
+                      onDragOver={(e) => e.preventDefault()}
+                      onDrop={handleDrop}
+                      className="block w-full rounded-[24px] border-2 border-dashed border-[#8a6a1f] bg-[#1d1709] p-8 text-center cursor-pointer hover:bg-[#231c0b] transition"
+                    >
+                      <input
+                        type="file"
+                        accept=".txt,.pdf,.doc,.docx"
+                        onChange={handleFileChange}
+                        className="hidden"
+                      />
+                      <div className="text-4xl mb-3">📄</div>
+                      <div className="text-lg font-bold text-[#f6d67a]">
+                        Drag and drop your CV here
+                      </div>
+                      <div className="text-[#c6aa63] mt-2">
+                        or click to upload a file
+                      </div>
+                      <div className="text-sm text-[#9f8647] mt-2">
+                        Accepts .txt, .pdf, .doc, .docx
+                      </div>
+
+                      {fileName && (
+                        <div className="mt-4 text-sm text-green-400 font-semibold">
+                          Uploaded: {fileName}
+                        </div>
+                      )}
+                    </label>
+                  </div>
+
+                  <div className="rounded-2xl border border-[#70571a] bg-[#1d1709] p-4">
+                    <p className="text-sm text-[#f2dc95] mb-1">Payment</p>
+                    <p className="text-[#c6aa63] leading-7">
+                      Pay securely with Stripe before submitting your CV for
+                      review.
+                    </p>
+                  </div>
+
+                  <div className="space-y-3">
+                    <button
+                      onClick={handleCvCheckout}
+                      disabled={cvLoading}
+                      className={`w-full rounded-2xl py-4 font-extrabold text-lg transition ${
+                        cvLoading
+                          ? "bg-[#d4af37]/70 text-[#241b05] cursor-wait"
+                          : "bg-[#d4af37] text-[#241b05] hover:opacity-95 cursor-pointer"
+                      }`}
+                    >
+                      {cvLoading ? "Opening Stripe..." : "Continue to CV Review"}
+                    </button>
+
+                    {cvLoading && (
+                      <div className="h-2 w-full overflow-hidden rounded-full bg-[#3b2e0d]">
+                        <div className="h-full w-1/3 animate-[loadingBar_1.1s_ease-in-out_infinite] rounded-full bg-[#f6d67a]" />
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
         </div>
-      )}
+      </div>
     </div>
   )
 }
