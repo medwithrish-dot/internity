@@ -58,7 +58,7 @@ export default function PricingPage() {
           </div>
         </div>
 
-        <div className="rounded-3xl border border-cyan-400/30 bg-[linear-gradient(180deg,rgba(34,211,238,0.08)_0%,rgba(124,92,255,0.10)_100%)] p-6 relative overflow-hidden">
+        <div className="rounded-3xl border border-cyan-400/30 bg-[linear-gradient(180deg,rgba(34,211,238,0.08)_0%,rgba(124,92,255,0.10)_100%)] p-6 relative overflow-hidden transition-all duration-300 hover:-translate-y-1 hover:border-cyan-300/50 hover:shadow-[0_18px_50px_rgba(34,211,238,0.12)]">
           <div className="absolute top-4 right-4 rounded-full bg-cyan-400 text-black px-3 py-1 text-xs font-extrabold">
             Recommended
           </div>

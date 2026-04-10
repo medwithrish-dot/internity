@@ -80,3 +80,11 @@ body {
 html {
   scroll-behavior: smooth;
 }
+@keyframes loadingBar {
+  0% {
+    transform: translateX(-120%);
+  }
+  100% {
+    transform: translateX(420%);
+  }
+}

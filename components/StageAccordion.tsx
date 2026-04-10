@@ -36,6 +36,8 @@ export default function StageAccordion({
   const [email, setEmail] = useState("")
   const [confirmEmail, setConfirmEmail] = useState("")
   const [fileName, setFileName] = useState("")
+  const [fileObject, setFileObject] = useState<File | null>(null)
+  const [cvLoading, setCvLoading] = useState(false)
 
   const emailsMatch =
     email.length > 0 &&
@@ -46,6 +48,7 @@ export default function StageAccordion({
     const file = e.target.files?.[0]
     if (file) {
       setFileName(file.name)
+      setFileObject(file)
     }
   }
 
@@ -54,6 +57,66 @@ export default function StageAccordion({
     const file = e.dataTransfer.files?.[0]
     if (file) {
       setFileName(file.name)
+      setFileObject(file)
+    }
+  }
+
+  const handleCvCheckout = async () => {
+    if (!emailsMatch) {
+      alert("Please make sure both email addresses match.")
+      return
+    }
+
+    if (!fileObject) {
+      alert("Please upload your CV first.")
+      return
+    }
+
+    try {
+      setCvLoading(true)
+
+      const formData = new FormData()
+      formData.append("file", fileObject)
+      formData.append("email", email)
+
+      const uploadRes = await fetch("/api/cv/upload", {
+        method: "POST",
+        body: formData,
+      })
+
+      const uploadData = await uploadRes.json()
+
+      if (!uploadRes.ok) {
+        throw new Error(uploadData.error || "CV upload failed")
+      }
+
+      const checkoutRes = await fetch("/api/stripe/cv-checkout", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          email,
+          filePath: uploadData.filePath,
+          fileName: uploadData.fileName,
+        }),
+      })
+
+      const checkoutData = await checkoutRes.json()
+
+      if (!checkoutRes.ok) {
+        throw new Error(checkoutData.error || "Checkout failed")
+      }
+
+      if (checkoutData.url) {
+        window.location.href = checkoutData.url
+        return
+      }
+
+      throw new Error("No checkout URL returned")
+    } catch (error) {
+      alert(error instanceof Error ? error.message : "Something went wrong")
+      setCvLoading(false)
     }
   }
 
@@ -80,13 +143,13 @@ export default function StageAccordion({
 
           <div>
             <div className="text-sm text-white/60">{stage}</div>
-           <div
-  className={`text-lg md:text-xl font-semibold transition-colors duration-200 ${
-    title === "CV & ATS Screening"
-      ? "text-[#f6d67a] group-hover:text-[#ffe89a]"
-      : "group-hover:text-cyan-300"
-  }`}
->
+            <div
+              className={`text-lg md:text-xl font-semibold transition-colors duration-200 ${
+                title === "CV & ATS Screening"
+                  ? "text-[#f6d67a] group-hover:text-[#ffe89a]"
+                  : "group-hover:text-cyan-300"
+              }`}
+            >
               {title}
             </div>
           </div>
@@ -160,8 +223,8 @@ export default function StageAccordion({
                 </h3>
 
                 <p className="text-[#dcc37a] mt-4 leading-7">
-                  Upload your CV, leave room for a future Stripe payment flow,
-                  and tell us where you want your feedback sent.
+                  Upload your CV, pay securely with Stripe, and we’ll send your
+                  feedback to your chosen email address.
                 </p>
 
                 <div className="mt-6 space-y-5">
@@ -239,14 +302,30 @@ export default function StageAccordion({
                   <div className="rounded-2xl border border-[#70571a] bg-[#1d1709] p-4">
                     <p className="text-sm text-[#f2dc95] mb-1">Payment</p>
                     <p className="text-[#c6aa63] leading-7">
-                      Stripe payment can be connected here later before final CV
-                      submission.
+                      Pay securely with Stripe before submitting your CV for
+                      review.
                     </p>
                   </div>
 
-                  <button className="w-full rounded-2xl bg-[#d4af37] text-[#241b05] py-4 font-extrabold text-lg hover:opacity-95 transition">
-                    Continue to CV Review
-                  </button>
+                  <div className="space-y-3">
+                    <button
+                      onClick={handleCvCheckout}
+                      disabled={cvLoading}
+                      className={`w-full rounded-2xl py-4 font-extrabold text-lg transition ${
+                        cvLoading
+                          ? "bg-[#d4af37]/70 text-[#241b05] cursor-wait"
+                          : "bg-[#d4af37] text-[#241b05] hover:opacity-95 cursor-pointer"
+                      }`}
+                    >
+                      {cvLoading ? "Opening Stripe..." : "Continue to CV Review"}
+                    </button>
+
+                    {cvLoading && (
+                      <div className="h-2 w-full overflow-hidden rounded-full bg-[#3b2e0d]">
+                        <div className="h-full w-1/3 animate-[loadingBar_1.1s_ease-in-out_infinite] rounded-full bg-[#f6d67a]" />
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
             )}
